@@ -1,0 +1,28 @@
+version: '3.6'
+volumes:
+  gitlab_data:
+    driver: local
+  gitlab_config:
+    driver: local   
+
+services:
+  gitlab:
+    image: 'gitlab/gitlab-ce:17.5.2-ce.0'
+    container_name: gitlab
+    restart: always
+    hostname: 'gitlab.example.com'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://gitlab.example.com'
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    ports:
+      - "1980:80"
+      - "1922:22"
+      - "19443:443"
+    volumes:
+      - 'gitlab_config:/etc/gitlab'
+      - '$HOME/gitlab/logs:/var/log/gitlab'
+      - 'gitlab_data:/var/opt/gitlab'

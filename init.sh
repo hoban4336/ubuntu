@@ -55,6 +55,8 @@ create_user() {
     add_public_key_from_url "/home/$NEW_USER"
   fi
   sudo chown -R "$NEW_USER:$NEW_USER" "/home/$NEW_USER/.ssh"
+
+  echo "$NEW_USER"
 }
 
 configure_firewall() {
@@ -110,10 +112,38 @@ install_powerlevel10k() {
   print_success ".zshrc configured successfully"
 }
 
+configure_docker() {
+    NEW_USER=$1
+    DOCKER_MNT="/mnt/storage"
+
+    command -v docker &> /dev/null || print_error "Docker가 설치되지 않았습니다."
+    print_step "Setting Permission for Docker..."
+    ## Permission
+    sudo usermod -aG docker $(whoami)
+    sudo usermod -aG docker "$NEW_USER"
+    print_success "Permission configured $(whoami), $NEW_USER successfully"
+
+    [ -d "$DOCKER_MNT" ] || print_error "$DOCKER_MNT 디렉토리가 존재하지 않습니다. 먼저 디렉토리를 생성하세요."
+    print_step "Setting Storage for Docker..."
+    sudo tee /etc/docker/daemon.json > /dev/null <<EOF
+{
+  "data-root": "/mnt/storage/docker"
+}
+EOF
+
+    print_step "Reloading Docker..."
+    sudo systemctl daemon-reload
+    sudo systemctl restart docker
+
+    echo -e "\n\n"
+    docker info
+    print_success "Storage for Docker $DOCKER_MNT configured successfully"
+}
+
 install_dependencies() {
   print_step "Installing dependencies..."
   sudo apt-get update -y
-  sudo apt-get install -y openssh-server git curl vim zsh
+  sudo apt-get install -y openssh-server git curl vim zsh htop docker.io docker-compose
   print "\n"
   print "\n"
   
@@ -129,8 +159,9 @@ main() {
   install_oh_my_zsh
   install_powerlevel10k
   add_public_key "$HOME"
-  create_user
+  NEW_USER=$(create_user)
   configure_ssh
+  configure_docker "$NEW_USER"
   configure_firewall
   print_success "All tasks completed!"
 }
