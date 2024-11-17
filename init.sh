@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# 의존성 설치
+echo "Installing OpenSSH server..."
+sudo apt-get update -y
+sudo apt-get install -y openssh-server git curl
+
 # 1. Oh My Zsh 설치
 echo "Installing Oh My Zsh..."
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
@@ -19,11 +24,6 @@ git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$
 echo "Configuring .zshrc..."
 grep -q '^ZSH_THEME=' ~/.zshrc || echo 'ZSH_THEME="powerlevel10k/powerlevel10k"' >> ~/.zshrc
 grep -q '^plugins=' ~/.zshrc || echo 'plugins=(git zsh-autosuggestions zsh-syntax-highlighting zsh-history-substring-search zsh-completions)' >> ~/.zshrc
-
-# SSH 설치
-echo "Installing OpenSSH server..."
-sudo apt-get update -y
-sudo apt-get install -y openssh-server
 
 # UFW 방화벽에서 SSH 포트 허용
 echo "Allowing SSH through the firewall..."
