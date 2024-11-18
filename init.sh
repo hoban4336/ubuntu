@@ -204,7 +204,7 @@ main() {
   f_public_key "$HOME"
   NEW_USER=$(f_user)
   f_ssh
-  f_docker "$NEW_USER
+  f_docker "$NEW_USER"
   f_firewall
   print_success "All tasks completed!"
 }
@@ -218,7 +218,7 @@ if [ "$#" -gt 0 ]; then
   for FUNC in "$@"; do
     if type "$FUNC" 2>/dev/null | grep -q 'function'; then
       print_step "Running function: $FUNC"
-      "f_$FUNC"
+      f_"$FUNC"
     else
       print_step "Function '$FUNC' not found."
     fi
@@ -227,4 +227,3 @@ if [ "$#" -gt 0 ]; then
 else
   main
 fi
-
