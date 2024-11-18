@@ -108,7 +108,7 @@ powerlevel10k() {
   
   print_step "Configuring Powerlevel10k .zshrc file ..."
   sed -i 's/^ZSH_THEME=".*"/ZSH_THEME="powerlevel10k\/powerlevel10k"/' ~/.zshrc
-  if command -v kubectl > /dev/null 2&1; then
+  if command -v kubectl > /dev/null 2>&1; then
     sed -i '/^plugins=(/c\plugins=(git kubectl kube-ps1 zsh-autosuggestions zsh-syntax-highlighting zsh-history-substring-search zsh-completions)' ~/.zshrc
   else
     sed -i '/^plugins=(/c\plugins=(git zsh-autosuggestions zsh-syntax-highlighting zsh-history-substring-search zsh-completions)' ~/.zshrc
