@@ -199,9 +199,9 @@ alias h='microk8s helm'
 
 main() {
   f_dependencies
-  f_alias
   f_zsh
   f_powerlevel10k
+  f_alias  
   f_public_key "$HOME"
   NEW_USER=$(f_user)
   f_ssh
