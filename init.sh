@@ -32,11 +32,11 @@ add_public_key_from_url() {
   fi
 }
 
-public_key() {
+f_public_key() {
   add_public_key_from_url "$HOME"
 }
 
-user() {
+f_user() {
   print_step "Creating a new user for Terraform..."
   echo -n "Enter the username to create (default: terraformuser): "
   read NEW_USER < /dev/tty
@@ -59,7 +59,7 @@ user() {
   echo "$NEW_USER"
 }
 
-firewall() {
+f_firewall() {
   print_step "Configuring firewall for SSH..."
   #SSH 포트
   sudo ufw allow ssh    
@@ -68,7 +68,7 @@ firewall() {
   print_success "Firewall configured successfully"
 }
 
-ssh() {
+f_ssh() {
   print_step "Configuring SSH settings..."
   sudo sed -i '/^#PubkeyAuthentication yes/s/^#//' /etc/ssh/sshd_config || print_error "Failed to enable PubkeyAuthentication"
   sudo sed -i 's/^#*PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config || print_error "Failed to disable PasswordAuthentication"
@@ -80,7 +80,7 @@ ssh() {
   print_success "SSH service restarted successfully"
 }
 
-zsh() {
+f_zsh() {
   print_step "Installing Oh My Zsh..."
   rm -rf ~/.oh-my-zsh ~/.zsh* || print_error "Failed to clean up existing Zsh installations"
   RUNZSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)" || print_error "Failed to install Oh My Zsh"
@@ -93,7 +93,7 @@ zsh() {
   print_success "Oh My Zsh and plugins installed"
 }
 
-powerlevel10k() {
+f_powerlevel10k() {
   print_step "Installing Powerlevel10k font..."
   wget https://github.com/powerline/powerline/raw/develop/font/PowerlineSymbols.otf
   wget https://github.com/powerline/powerline/raw/develop/font/10-powerline-symbols.conf
@@ -116,7 +116,7 @@ powerlevel10k() {
   print_success ".zshrc configured successfully"
 }
 
-gitlab() {
+f_gitlab() {
 
   sudo snap install microk8s --classic --channel=1.28/stable
   sudo usermod -aG microk8s $(whoami)
@@ -129,7 +129,7 @@ gitlab() {
 
 }
 
-docker() {
+f_docker() {
     NEW_USER=$1
     DOCKER_MNT="/mnt/storage"
 
@@ -158,7 +158,7 @@ EOF
     print_success "Storage for Docker $DOCKER_MNT configured successfully"
 }
 
-dependencies() {
+f_dependencies() {
   print_step "Installing dependencies..."
   sudo apt-get update -y
   sudo apt-get install -y openssh-server git curl vim zsh net-tools htop docker.io docker-compose
@@ -166,7 +166,7 @@ dependencies() {
   print "\n"
 }
 
-alias() {
+f_alias() {
   # Prerequisite 설정
   print_step "Setting up default editor to vim..."
 
@@ -197,16 +197,15 @@ alias h='microk8s helm'
 }
 
 main() {
-  dependencies
-  alias
-  zsh
-  powerlevel10k
-  public_key "$HOME"
-  NEW_USER=$(user)
-  ssh
-  sleep 3
-  docker "$NEW_USER
-  firewall
+  f_dependencies
+  f_alias
+  f_zsh
+  f_powerlevel10k
+  f_public_key "$HOME"
+  NEW_USER=$(f_user)
+  f_ssh
+  f_docker "$NEW_USER
+  f_firewall
   print_success "All tasks completed!"
 }
 
@@ -219,7 +218,7 @@ if [ "$#" -gt 0 ]; then
   for FUNC in "$@"; do
     if type "$FUNC" 2>/dev/null | grep -q 'function'; then
       print_step "Running function: $FUNC"
-      "$FUNC"
+      "f_$FUNC"
     else
       print_step "Function '$FUNC' not found."
     fi
