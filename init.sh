@@ -32,11 +32,11 @@ add_public_key_from_url() {
   fi
 }
 
-add_public_key() {
+public_key() {
   add_public_key_from_url "$HOME"
 }
 
-create_user() {
+user() {
   print_step "Creating a new user for Terraform..."
   echo -n "Enter the username to create (default: terraformuser): "
   read NEW_USER < /dev/tty
@@ -59,15 +59,16 @@ create_user() {
   echo "$NEW_USER"
 }
 
-configure_firewall() {
+firewall() {
   print_step "Configuring firewall for SSH..."
   #SSH 포트
   sudo ufw allow ssh    
   sudo ufw --force enable
+  # sudo ufw disable
   print_success "Firewall configured successfully"
 }
 
-configure_ssh() {
+ssh() {
   print_step "Configuring SSH settings..."
   sudo sed -i '/^#PubkeyAuthentication yes/s/^#//' /etc/ssh/sshd_config || print_error "Failed to enable PubkeyAuthentication"
   sudo sed -i 's/^#*PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config || print_error "Failed to disable PasswordAuthentication"
@@ -79,7 +80,7 @@ configure_ssh() {
   print_success "SSH service restarted successfully"
 }
 
-install_oh_my_zsh() {
+zsh() {
   print_step "Installing Oh My Zsh..."
   rm -rf ~/.oh-my-zsh ~/.zsh* || print_error "Failed to clean up existing Zsh installations"
   RUNZSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)" || print_error "Failed to install Oh My Zsh"
@@ -92,7 +93,7 @@ install_oh_my_zsh() {
   print_success "Oh My Zsh and plugins installed"
 }
 
-install_powerlevel10k() {
+powerlevel10k() {
   print_step "Installing Powerlevel10k font..."
   wget https://github.com/powerline/powerline/raw/develop/font/PowerlineSymbols.otf
   wget https://github.com/powerline/powerline/raw/develop/font/10-powerline-symbols.conf
@@ -107,12 +108,28 @@ install_powerlevel10k() {
   
   print_step "Configuring Powerlevel10k .zshrc file ..."
   sed -i 's/^ZSH_THEME=".*"/ZSH_THEME="powerlevel10k\/powerlevel10k"/' ~/.zshrc
-  sed -i '/^plugins=(/c\plugins=(git zsh-autosuggestions zsh-syntax-highlighting zsh-history-substring-search zsh-completions)' ~/.zshrc
-  
+  if command -v kubectl > /dev/null 2&1; then
+    sed -i '/^plugins=(/c\plugins=(git kubectl kube-ps1 zsh-autosuggestions zsh-syntax-highlighting zsh-history-substring-search zsh-completions)' ~/.zshrc
+  else
+    sed -i '/^plugins=(/c\plugins=(git zsh-autosuggestions zsh-syntax-highlighting zsh-history-substring-search zsh-completions)' ~/.zshrc
+  fi
   print_success ".zshrc configured successfully"
 }
 
-configure_docker() {
+gitlab() {
+
+  sudo snap install microk8s --classic --channel=1.28/stable
+  sudo usermod -aG microk8s $(whoami)
+
+  #dpkg
+  curl -sSL "https://raw.githubusercontent.com/upciti/wakemeops/main/assets/install_repository" | sudo bash
+  sudo apt install glab
+
+  helm repo add gitlab https://charts.gitlab.io/
+
+}
+
+docker() {
     NEW_USER=$1
     DOCKER_MNT="/mnt/storage"
 
@@ -127,7 +144,8 @@ configure_docker() {
     print_step "Setting Storage for Docker..."
     sudo tee /etc/docker/daemon.json > /dev/null <<EOF
 {
-  "data-root": "/mnt/storage/docker"
+  "data-root": "/mnt/storage/docker",
+  "insecure-registries" : ["localhost:32000"]
 }
 EOF
 
@@ -140,30 +158,73 @@ EOF
     print_success "Storage for Docker $DOCKER_MNT configured successfully"
 }
 
-install_dependencies() {
+dependencies() {
   print_step "Installing dependencies..."
   sudo apt-get update -y
-  sudo apt-get install -y openssh-server git curl vim zsh htop docker.io docker-compose
+  sudo apt-get install -y openssh-server git curl vim zsh net-tools htop docker.io docker-compose
   print "\n"
   print "\n"
-  
+}
+
+alias() {
   # Prerequisite 설정
   print_step "Setting up default editor to vim..."
-  grep -q 'export EDITOR=vim' ~/.bashrc || echo 'export EDITOR=vim' >> ~/.bashrc
+
+  CONFIGS="
+export EDITOR=vim
+alias kubectl='microk8s kubectl'
+alias k='microk8s kubectl'
+alias helm='microk8s helm'
+alias h='microk8s helm'
+"
+
+  FILES="$HOME/.bashrc $HOME/.zshrc"
+
+  for file in $FILES; do
+    # 파일이 존재하는지 확인
+    if [ -f "$file" ]; then
+      # 한 줄씩 추가
+      echo "$CONFIGS" | while IFS= read -r line; do
+        if ! grep -Fq "$line" "$file"; then
+          printf "%s\n" "$line" >> "$file"
+        fi
+      done
+    fi
+  done
+
   git config --global core.editor "vim"
   print_success "Default editor set to vim"
 }
 
 main() {
-  install_dependencies
-  install_oh_my_zsh
-  install_powerlevel10k
-  add_public_key "$HOME"
-  NEW_USER=$(create_user)
-  configure_ssh
-  configure_docker "$NEW_USER"
-  configure_firewall
+  dependencies
+  alias
+  zsh
+  powerlevel10k
+  public_key "$HOME"
+  NEW_USER=$(user)
+  ssh
+  docker "$NEW_USER"
+  firewall
   print_success "All tasks completed!"
 }
 
-main
+info() {
+  lsb_release -a
+  sudo lshw
+}
+
+if [ "$#" -gt 0 ]; then
+  for FUNC in "$@"; do
+    if type "$FUNC" 2>/dev/null | grep -q 'function'; then
+      print_step "Running function: $FUNC"
+      "$FUNC"
+    else
+      print_step "Function '$FUNC' not found."
+    fi
+  done
+  exit 0
+else
+  main
+fi
+

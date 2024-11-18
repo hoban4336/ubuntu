@@ -6,6 +6,7 @@ volumes:
     driver: local   
 
 services:
+  # sudo docker exec -it gitlab grep 'Password:' /etc/gitlab/initial_root_password
   gitlab:
     image: 'gitlab/gitlab-ce:17.5.2-ce.0'
     container_name: gitlab
@@ -14,6 +15,17 @@ services:
     environment:
       GITLAB_OMNIBUS_CONFIG: |
         external_url 'http://gitlab.example.com'
+        # ssh
+        gitlab_rails['gitlab_shell_ssh_port'] = 2424
+        # kas
+        gitlab_kas['internal_api_listen_network'] = 'unix'
+        gitlab_kas['internal_api_listen_address'] = '/var/opt/gitlab/gitlab-kas/sockets/internal-api.socket'
+        gitlab_kas['private_api_listen_network'] = 'unix'
+        gitlab_kas['private_api_listen_address'] = '/var/opt/gitlab/gitlab-kas/sockets/private-api.socket'
+        gitlab_kas['env'] = {
+          'SSL_CERT_DIR' => "/opt/gitlab/embedded/ssl/certs/",
+          'OWN_PRIVATE_API_URL' => 'unix:///var/opt/gitlab/gitlab-kas/sockets/private-api.socket'
+        }       
     deploy:
       resources:
         limits:
@@ -26,3 +38,4 @@ services:
       - 'gitlab_config:/etc/gitlab'
       - '$HOME/gitlab/logs:/var/log/gitlab'
       - 'gitlab_data:/var/opt/gitlab'
+    shm_size: '256m' # 공유 메모리 사이즈   
