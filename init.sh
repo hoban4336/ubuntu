@@ -204,7 +204,8 @@ main() {
   public_key "$HOME"
   NEW_USER=$(user)
   ssh
-  docker "$NEW_USER"
+  sleep 3
+  docker "$NEW_USER
   firewall
   print_success "All tasks completed!"
 }
