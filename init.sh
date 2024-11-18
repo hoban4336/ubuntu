@@ -34,6 +34,7 @@ add_public_key_from_url() {
 
 f_public_key() {
   add_public_key_from_url "$HOME"
+  sudo chown -R "$(whoami):$(whoami)" "$HOME/.ssh"
 }
 
 f_user() {
