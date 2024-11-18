@@ -119,7 +119,8 @@ f_powerlevel10k() {
 
 f_gitlab() {
 
-  sudo snap install microk8s --classic --channel=1.28/stable
+  sudo snap install microk8s --classic --channel=1.23/stable
+  sudo snap refresh microk8s --classic --channel=1.31/stable
   sudo usermod -aG microk8s $(whoami)
 
   #dpkg
@@ -127,7 +128,6 @@ f_gitlab() {
   sudo apt install glab
 
   helm repo add gitlab https://charts.gitlab.io/
-
 }
 
 f_docker() {
